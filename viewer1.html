@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How The Night Hunts — S. M. Dean</title>
+<style>
+  :root{
+    /* --- reglages exposes : c'est ici qu'on ajuste sans toucher au JS --- */
+    --bg-core:   #46302a;   /* coeur du fond, brun chaud */
+    --bg-edge:   #150e0c;   /* bord du fond */
+    --hint:      rgba(22,20,21,.42);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:transparent;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    overflow:hidden;
+  }
+  #stage{position:fixed;inset:0;display:block}
+  #stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+  #stage canvas.dragging{cursor:grabbing}
+
+  #hint{
+    position:fixed;left:0;right:0;bottom:clamp(18px,4vh,44px);
+    text-align:center;color:var(--hint);
+    font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    pointer-events:none;transition:opacity .7s ease;
+  }
+  #hint.gone{opacity:0}
+
+  #loader{
+    position:fixed;inset:0;display:grid;place-items:center;
+    transition:opacity .6s ease;pointer-events:none;
+  }
+  #loader.gone{opacity:0}
+  #bar{width:82px;height:1px;background:rgba(22,20,21,.14);position:relative;overflow:hidden}
+  #bar i{position:absolute;inset:0 100% 0 0;background:rgba(22,20,21,.55);transition:right .3s ease}
+
+  #fallback{position:fixed;inset:0;display:none;place-items:center;padding:8vh 6vw}
+  #fallback img{max-width:100%;max-height:84vh;width:auto;height:auto;object-fit:contain;box-shadow:0 40px 80px rgba(0,0,0,.6)}
+  #diag{position:fixed;left:0;right:0;bottom:14px;text-align:center;color:rgba(255,190,170,.75);font:500 11px/1.6 ui-monospace,monospace;letter-spacing:.06em;display:none;padding:0 16px}
+  body.nowebgl #diag{display:block}
+  body.nowebgl #fallback{display:grid}
+  body.nowebgl #stage,body.nowebgl #hint,body.nowebgl #loader{display:none}
+
+  #panel{
+    position:fixed;top:14px;right:14px;width:212px;padding:13px 14px 11px;
+    background:rgba(18,13,11,.82);backdrop-filter:blur(9px);
+    border:1px solid rgba(240,225,200,.14);border-radius:9px;
+    color:rgba(240,228,208,.9);font:500 10px/1.5 ui-monospace,monospace;
+    letter-spacing:.04em;display:none;z-index:9
+  }
+  #panel.on{display:block}
+  #panel h4{margin:0 0 11px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+    color:rgba(240,225,200,.45);font-weight:600}
+  #panel label{display:block;margin:0 0 9px}
+  #panel .row{display:flex;justify-content:space-between;margin-bottom:3px}
+  #panel b{font-weight:600;color:rgba(255,240,215,.95)}
+  #panel input[type=range]{width:100%;height:2px;-webkit-appearance:none;appearance:none;
+    background:rgba(240,225,200,.2);border-radius:2px;outline:none;margin:0}
+  #panel input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;
+    border-radius:50%;background:#e8d9be;cursor:pointer}
+  #panel input[type=range]::-moz-range-thumb{width:11px;height:11px;border:0;
+    border-radius:50%;background:#e8d9be;cursor:pointer}
+  #panel button{width:100%;margin-top:4px;padding:6px;cursor:pointer;
+    background:rgba(240,225,200,.1);border:1px solid rgba(240,225,200,.2);
+    border-radius:5px;color:inherit;font:inherit;letter-spacing:.1em}
+  #panel button:hover{background:rgba(240,225,200,.18)}
+  #panel small{display:block;margin-top:7px;color:rgba(240,225,200,.32);font-size:9px;line-height:1.4}
+  @media (prefers-reduced-motion:reduce){#hint{transition:none}}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+<p id="hint">Survolez, ou glissez pour tourner<br><span style="opacity:.55">Touche D : calibrage</span></p>
+<div id="panel">
+  <h4>Calibrage &middot; v14</h4>
+  <label><span class="row"><span>Exposition</span><b data-v="exposure">—</b></span>
+    <input type="range" id="s-exposure" min="0.55" max="1.85" step="0.01"></label>
+  <label><span class="row"><span>Reflets / or</span><b data-v="envIntensity">—</b></span>
+    <input type="range" id="s-envIntensity" min="0.3" max="2.6" step="0.02"></label>
+  <label><span class="row"><span>Reflecteur frontal</span><b data-v="frontFill">—</b></span>
+    <input type="range" id="s-frontFill" min="0" max="2" step="0.05"></label>
+  <label><span class="row"><span>Eclats de l'or</span><b data-v="sparkle">—</b></span>
+    <input type="range" id="s-sparkle" min="0" max="2.5" step="0.05"></label>
+  <label><span class="row"><span>Reflets du papier</span><b data-v="paperSpec">—</b></span>
+    <input type="range" id="s-paperSpec" min="0" max="0.8" step="0.01"></label>
+  <label><span class="row"><span>Bombe de la dorure</span><b data-v="emboss">—</b></span>
+    <input type="range" id="s-emboss" min="0" max="3" step="0.05"></label>
+  <label><span class="row"><span>Vernis selectif</span><b data-v="varnish">—</b></span>
+    <input type="range" id="s-varnish" min="0" max="1" step="0.02"></label>
+  <label><span class="row"><span>Durete du vernis</span><b data-v="varnishRough">—</b></span>
+    <input type="range" id="s-varnishRough" min="0.01" max="0.35" step="0.005"></label>
+  <label><span class="row"><span>Relief</span><b data-v="normalScale">—</b></span>
+    <input type="range" id="s-normalScale" min="0" max="1.2" step="0.02"></label>
+  <label><span class="row"><span>Tranches carton</span><b data-v="boardEnv">—</b></span>
+    <input type="range" id="s-boardEnv" min="0" max="1" step="0.02"></label>
+  <label><span class="row"><span>Eclat tranches</span><b data-v="boardSpec">—</b></span>
+    <input type="range" id="s-boardSpec" min="0" max="1" step="0.01"></label>
+  <label><span class="row"><span>Teinte tranches</span><b id="tintv">—</b></span>
+    <input type="color" id="s-tint" style="width:100%;height:22px;padding:0;border:1px solid rgba(240,225,200,.2);border-radius:4px;background:none;cursor:pointer"></label>
+  <button id="copy">Copier les reglages</button>
+  <small>Touche D pour masquer</small>
+</div>
+<div id="loader"><div id="bar"><i></i></div></div>
+<p id="diag"></p>
+<div id="fallback"><img src="assets/viewer1/front-albedo.webp" alt="How The Night Hunts — S. M. Dean"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function(){
+'use strict';
+
+/* =======================================================================
+   1. CONFIG — tout ce qui se regle est ici
+   ======================================================================= */
+var BOOK = {
+  W: 15.24,    // largeur du plat (cm)
+  H: 22.86,    // hauteur
+  D: 3.34,     // epaisseur totale, livre ferme
+  T: 0.26,     // epaisseur du carton de couverture
+  overhang: 0.28, // debord de la couverture sur le bloc de pages (chasse)
+  bevel:    0.075,// rayon de l'arete arrondie du carton : la source du lisere lumineux
+  corner:   0.20  // rayon des coins de couverture, comme un vrai livre relie
+};
+
+var LOOK = {
+  exposure:      1.08,
+  envIntensity:  1.28,   // force des reflets sur le foil
+  frontFill:     0.85,   // grand reflecteur face au livre : sauve les poses de face
+  varnish:       1.00,   // vernis selectif : couche brillante posee UNIQUEMENT sur le
+                         // marquage metallique (canal R de la carte matiere). C'est ce
+                         // qui fait lire "dorure" et non "zone de couleur doree".
+  varnishRough:  0.045,  // plus c'est bas, plus le vernis est miroir
+  sparkle:       1.00,   // eclats francs sur le marquage dore. Une env map douce donne
+                         // un or terne : ce sont les petites sources vives et contrastees
+                         // qui glissent sur le foil et le font scintiller quand il tourne.
+  boardEnv:      0.45,   // part d'environnement recue par les tranches du carton.
+                         // A angle rasant, le Fresnel fait tout reflechir.
+  boardTint:  '#09090b',  // teinte de la toile sur les tranches
+  boardSpec:     0.34,   // eclat des tranches (F0 dielectrique)
+  clothRough:    null,   // lu depuis la roughnessMap
+  normalScale:   0.38,   // relief du grain de l'impression
+  paperSpec:     0.16,   // reflectance speculaire du SUPPORT IMPRIME uniquement.
+                         // En PBR, ce reglage ne s'applique qu'aux zones non
+                         // metalliques : sur la dorure, c'est la couleur du metal qui
+                         // fixe le reflet, et il est totalement insensible a ce curseur.
+                         // C'est donc le seul moyen d'eteindre les reflets sur le papier
+                         // sans toucher a l'or. A 0, le papier ne renvoie plus rien.
+  emboss:        1.00,   // bombe de la dorure. Une lettre PLATE renvoie la meme
+                         // direction sur toute sa surface : elle s'allume ou s'eteint
+                         // d'un bloc. Bombee, ses normales balaient un cone et une
+                         // partie d'elle accroche un eclat en permanence.
+  keyIntensity:  2.1,
+  fillIntensity: 0.55,
+  restY:  0.62,          // pose de repos : trois-quarts
+  restX:  0.20,
+  autoSpin: 0.055,       // rad/s au repos
+  hoverY:   0.34,        // parallaxe au survol, sans clic
+  hoverX:   0.15,
+  hoverEase: 0.055,
+  damping: 0.925,
+  dragSpeed: 0.0072,
+  tiltLimit: 0.85
+};
+
+var TEX = 'assets/viewer1/';
+
+/* =======================================================================
+   2. GARDE-FOU WEBGL
+   ======================================================================= */
+function webglOK(){
+  try{
+    var c=document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl')||c.getContext('experimental-webgl')));
+  }catch(e){ return false; }
+}
+var why = null;
+if(typeof THREE==='undefined') why = 'Three.js n\u2019a pas pu \u00eatre charg\u00e9.';
+else if(!webglOK())           why = 'WebGL est indisponible ou d\u00e9sactiv\u00e9 dans ce navigateur.';
+if(why){
+  document.body.classList.add('nowebgl');
+  document.getElementById('diag').textContent = why + ' Affichage de la couverture \u00e0 plat.';
+  return;
+}
+
+var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+/* =======================================================================
+   3. SCENE
+   ======================================================================= */
+var stage = document.getElementById('stage');
+var renderer = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = LOOK.exposure;
+renderer.physicallyCorrectLights = true;
+stage.appendChild(renderer.domElement);
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera(28, 1, 1, 400);
+camera.position.set(0, 0, 56);
+
+var maxAniso = renderer.capabilities.getMaxAnisotropy();
+
+/* ---- environnement : equirectangulaire peinte au canvas (0 ko reseau) ----
+   C'est ce qui fait vivre le foil. Sans env map, un materiau metallique est noir. */
+function studioEnv(frontFill, spark){
+  var w=1024,h=512,c=document.createElement('canvas');
+  c.width=w;c.height=h;
+  var g=c.getContext('2d');
+
+  // ciel -> horizon -> sol
+  var grd=g.createLinearGradient(0,0,0,h);
+  grd.addColorStop(0.00,'#d6cec4');
+  grd.addColorStop(0.42,'#a49b91');
+  grd.addColorStop(0.52,'#6e655e');
+  grd.addColorStop(1.00,'#1a1513');
+  g.fillStyle=grd; g.fillRect(0,0,w,h);
+
+  function softbox(cx,cy,rx,ry,intensity){
+    var r=g.createRadialGradient(cx,cy,0,cx,cy,Math.max(rx,ry));
+    r.addColorStop(0,'rgba(255,252,246,'+intensity+')');
+    r.addColorStop(0.55,'rgba(255,250,242,'+(intensity*0.35)+')');
+    r.addColorStop(1,'rgba(255,250,242,0)');
+    g.save(); g.translate(cx,cy); g.scale(1,ry/Math.max(rx,ry)); g.translate(-cx,-cy);
+    g.fillStyle=r; g.beginPath(); g.arc(cx,cy,Math.max(rx,ry),0,6.2832); g.fill(); g.restore();
+  }
+  // key : haut-droite, large et douce
+  softbox(w*0.70, h*0.20, 250, 170, 1.0);
+  // fill : haut-gauche, plus faible
+  softbox(w*0.22, h*0.26, 190, 130, 0.45);
+  // kicker : bande basse-arriere, donne le liseré sur les arêtes
+  softbox(w*0.05, h*0.62, 160, 60, 0.30);
+  softbox(w*0.98, h*0.60, 160, 60, 0.26);
+  /* Reflecteur frontal : u=0.75 dans une equirectangulaire regarde vers +Z,
+     soit exactement ce que renvoie une couverture face a la camera.
+     C'est ce panneau qui empeche le foil de s'eteindre de face. */
+  if(frontFill > 0){
+    softbox(w*0.75, h*0.40, 430, 300, frontFill);
+    softbox(w*0.75, h*0.56, 300, 150, frontFill*0.55);
+  }
+
+  /* Semis d'eclats. Mesure faite sur une reference reelle : la brillance d'une
+     dorure est composee de ~170 taches dont la MEDIANE fait 2 pixels. Des sources
+     larges se refletent en blob laiteux sur un metal poli ; il faut beaucoup de
+     sources minuscules pour que chaque filet attrape son propre eclat. */
+  if(spark > 0){
+    var seed = 20260730;
+    function rnd(){ seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+    for(var i = 0; i < 90; i++){
+      var sx = rnd() * w;
+      var sy = h * (0.03 + rnd() * 0.68);                    // reparti, sans amas
+      var rr = 2 + rnd() * 7;                               // 2 a 9 px : ponctuel
+      var it = spark * (0.40 + rnd() * 0.70);
+      var gg = g.createRadialGradient(sx, sy, 0, sx, sy, rr);
+      gg.addColorStop(0, 'rgba(255,253,248,' + it + ')');
+      gg.addColorStop(0.4, 'rgba(255,250,240,' + (it * 0.4) + ')');
+      gg.addColorStop(1, 'rgba(255,250,240,0)');
+      g.fillStyle = gg;
+      g.beginPath(); g.arc(sx, sy, rr, 0, 6.2832); g.fill();
+    }
+    // deux bandes verticales douces : le balayage continu quand le livre pivote
+    softbox(w * 0.80, h * 0.30, 16, 190, spark * 0.55);
+    softbox(w * 0.20, h * 0.34, 13, 150, spark * 0.40);
+  }
+
+  var t=new THREE.CanvasTexture(c);
+  t.encoding = THREE.sRGBEncoding;
+  t.mapping = THREE.EquirectangularReflectionMapping;
+  return t;
+}
+var pmrem = new THREE.PMREMGenerator(renderer);
+pmrem.compileEquirectangularShader();
+var envRT = null;
+function applyEnv(frontFill){
+  var src = studioEnv(frontFill, LOOK.sparkle);
+  var rt = pmrem.fromEquirectangular(src);
+  if(envRT) envRT.dispose();
+  envRT = rt;
+  scene.environment = rt.texture;
+  src.dispose();
+}
+applyEnv(LOOK.frontFill);
+
+/* ---- lumieres directes : le specular franc que l'env map ne donne pas ---- */
+var key = new THREE.DirectionalLight(0xfff4e6, LOOK.keyIntensity);
+key.position.set(24, 30, 34);
+scene.add(key);
+var fill = new THREE.DirectionalLight(0xdce6ff, LOOK.fillIntensity);
+fill.position.set(-28, 8, 18);
+scene.add(fill);
+var rim = new THREE.DirectionalLight(0xffe9cf, 0.85);
+rim.position.set(-14, -6, -30);
+scene.add(rim);
+
+/* =======================================================================
+   4. TEXTURES
+   ======================================================================= */
+var loader = new THREE.TextureLoader();
+var pending = 0, done = 0;
+var barFill = document.querySelector('#bar i');
+
+function tick(){
+  done++;
+  if(barFill) barFill.style.right = Math.max(0, 100 - (done/pending*100)) + '%';
+  if(done >= pending) reveal();
+}
+function load(file, srgb){
+  pending++;
+  var t = loader.load(TEX+file, tick, undefined, tick);
+  if(srgb) t.encoding = THREE.sRGBEncoding;
+  t.anisotropy = maxAniso;
+  return t;
+}
+
+var T = {
+  frontAlbedo: load('front-albedo.webp', true),
+  frontOrm:    load('front-orm.webp', false),
+  frontNormal: load('front-normal.webp', false),
+  backAlbedo:  load('back-albedo.webp', true),
+  backOrm:     load('back-orm.webp', false),
+  backNormal:  load('back-normal.webp', false),
+  spineAlbedo: load('spine-albedo.webp', true),
+  spineOrm:    load('spine-orm.webp', false),
+  pageAlbedo:  load('page-albedo.webp', true),
+  pageNormal:  load('page-normal.webp', false)
+};
+
+/* =======================================================================
+   5. MATERIAUX
+   Le packing ORM : R=AO (non branche), G=roughness, B=metalness.
+   three.js lit bien roughnessMap sur G et metalnessMap sur B avec la meme image.
+   ======================================================================= */
+function panelMat(albedo, orm, normal){
+  var def = {
+    map: albedo,
+    roughnessMap: orm,      // canal G
+    metalnessMap: orm,      // canal B
+    clearcoatMap: orm,      // canal R = le masque du marquage : vernis selectif
+    clearcoat: LOOK.varnish,
+    clearcoatRoughness: LOOK.varnishRough,
+    reflectivity: LOOK.paperSpec,
+    roughness: 1.0,
+    metalness: 1.0,
+    envMapIntensity: LOOK.envIntensity
+  };
+  if(normal){
+    def.normalMap = normal;
+    def.normalScale = new THREE.Vector2(LOOK.emboss, LOOK.emboss);
+  }
+  return new THREE.MeshPhysicalMaterial(def);
+}
+// tranche du carton : la toile qui enveloppe, ni imprimee ni doree
+var boardMat = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color(LOOK.boardTint),
+  roughness: 0.80,
+  metalness: 0.0,
+  reflectivity: LOOK.boardSpec,
+  envMapIntensity: LOOK.envIntensity * LOOK.boardEnv
+});
+/* Les aretes du dos sont le pire cas possible : bandes de 2,6 mm vues presque
+   toujours de biais, donc Fresnel au maximum, et coplanaires avec les faces
+   internes des plats. D'ou les liserés gris. On les rend quasi noires et mates,
+   et le polygonOffset les repousse dans le z-buffer pour que les plats gagnent
+   toujours l'arbitrage de profondeur. */
+var edgeMat = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color(LOOK.boardTint),
+  roughness: 0.86,
+  metalness: 0.0,
+  reflectivity: LOOK.boardSpec * 0.7,
+  envMapIntensity: LOOK.envIntensity * LOOK.boardEnv * 0.7,
+  polygonOffset: true, polygonOffsetFactor: 1.4, polygonOffsetUnits: 1.4
+});
+
+var pageMat = new THREE.MeshPhysicalMaterial({
+  map: T.pageAlbedo, normalMap: T.pageNormal,
+  normalScale: new THREE.Vector2(0.26,0.26),
+  color: 0xffffff,
+  roughness: 0.76, metalness: 0.0, envMapIntensity: LOOK.envIntensity*0.85
+});
+var pageInner = new THREE.MeshPhysicalMaterial({color:0xf2efe8, roughness:0.9, metalness:0.0});
+
+var matFront = panelMat(T.frontAlbedo, T.frontOrm, T.frontNormal);
+var matBack  = panelMat(T.backAlbedo,  T.backOrm,  T.backNormal);
+// le dos garde son foil metallique mais aucun relief : le texte doit rester net
+var matSpine = panelMat(T.spineAlbedo, T.spineOrm, null);
+
+/* Panneau de couverture a arete arrondie.
+ *
+ * Objectif : reproduire ce qu'on voit sur les livres Stripe Press — l'illustration
+ * s'enroule sur un bord arrondi, ce qui produit un liseré lumineux le long de
+ * chaque arete. Une BoxGeometry ne peut pas le faire : sa normale saute d'un coup.
+ *
+ * Methode : ExtrudeGeometry fournit le bevel, mais elle range tout le pourtour
+ * (bevel compris) dans le groupe "cotes", et ses UV sont en coordonnees monde.
+ * On repasse derriere : on trie chaque triangle selon sa normale, on remet le
+ * bevel avec la face imprimee, et on reprojette les UV en planaire pour que la
+ * texture soit continue du plat jusqu'au bord arrondi.
+ *
+ * Groupes en sortie : 0 = face imprimee (+Z, bevel inclus)
+ *                     1 = tranche (perpendiculaire)
+ *                     2 = face interieure (-Z)
+ */
+function beveledPanel(w, h, d, bevel, corner){
+  bevel  = Math.min(bevel, d * 0.45);
+  corner = Math.max(corner || 0.0001, bevel + 0.0001);
+  corner = Math.min(corner, Math.min(w, h)/2 - bevel*2 - 0.001);
+
+  /* bevelSize pousse le contour vers l'exterieur : on retracte la shape d'autant
+     pour que le panneau fini mesure exactement w x h x d. */
+  var sw = w - bevel*2, sh = h - bevel*2;
+  var x = sw/2 - corner, y = sh/2 - corner, s = new THREE.Shape();
+  s.moveTo(-x, -sh/2);
+  s.lineTo( x, -sh/2);
+  s.absarc( x, -y, corner, -Math.PI/2, 0, false);
+  s.lineTo( sw/2,  y);
+  s.absarc( x,  y, corner, 0, Math.PI/2, false);
+  s.lineTo(-x, sh/2);
+  s.absarc(-x,  y, corner, Math.PI/2, Math.PI, false);
+  s.lineTo(-sw/2, -y);
+  s.absarc(-x, -y, corner, Math.PI, Math.PI*1.5, false);
+
+  var geo = new THREE.ExtrudeGeometry(s, {
+    depth: d - bevel*2,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelOffset: 0,
+    bevelSegments: 3,
+    curveSegments: 4,
+    steps: 1
+  });
+
+  geo.translate(0, 0, -(d - bevel*2)/2);   // centrer en Z
+  geo.computeVertexNormals();
+
+  var pos = geo.attributes.position.array;
+  var nrm = geo.attributes.normal.array;
+  var triCount = pos.length / 9;
+
+  // --- tri des triangles par orientation dominante ---
+  var FRONT = 0, SIDE = 1, BACK = 2;
+  var bucket = new Uint8Array(triCount);
+  for(var t = 0; t < triCount; t++){
+    var nz = (nrm[t*9+2] + nrm[t*9+5] + nrm[t*9+8]) / 3;
+    bucket[t] = nz >  0.22 ? FRONT : (nz < -0.22 ? BACK : SIDE);
+  }
+
+  // --- reordonnancement : front, puis side, puis back ---
+  var order = [];
+  [FRONT, SIDE, BACK].forEach(function(b){
+    for(var i = 0; i < triCount; i++) if(bucket[i] === b) order.push(i);
+  });
+
+  var np = new Float32Array(pos.length);
+  var nn = new Float32Array(pos.length);
+  for(var k = 0; k < order.length; k++){
+    for(var c = 0; c < 9; c++){
+      np[k*9+c] = pos[order[k]*9+c];
+      nn[k*9+c] = nrm[order[k]*9+c];
+    }
+  }
+
+  // --- UV : projection planaire pour front/back (texture continue sur le bevel),
+  //     developpement approximatif pour la tranche ---
+  var nu = new Float32Array(pos.length/3*2);
+  for(var v = 0; v < np.length/3; v++){
+    var px = np[v*3], py = np[v*3+1], pz = np[v*3+2];
+    var b = bucket[order[Math.floor(v/3)]];
+    var u, vv;
+    if(b === FRONT){
+      u  = px/w + 0.5;  vv = py/h + 0.5;
+    } else if(b === BACK){
+      u  = 0.5 - px/w;  vv = py/h + 0.5;   // miroir : lisible vue de dos
+    } else {
+      u  = (Math.abs(px)/w + Math.abs(py)/h) * 3.0;
+      vv = pz/d + 0.5;
+    }
+    nu[v*2] = u; nu[v*2+1] = vv;
+  }
+
+  geo.setAttribute('position', new THREE.BufferAttribute(np, 3));
+  geo.setAttribute('normal',   new THREE.BufferAttribute(nn, 3));
+  geo.setAttribute('uv',       new THREE.BufferAttribute(nu, 2));
+
+  // --- groupes ---
+  var counts = [0,0,0];
+  for(var i2 = 0; i2 < triCount; i2++) counts[bucket[i2]]++;
+  geo.clearGroups();
+  geo.addGroup(0,                       counts[0]*3, 0);
+  geo.addGroup(counts[0]*3,             counts[1]*3, 1);
+  geo.addGroup((counts[0]+counts[1])*3, counts[2]*3, 2);
+
+  return geo;
+}
+
+/* =======================================================================
+   6. GEOMETRIE — hardcover : 2 plats + dos + bloc de pages en retrait.
+   Ordre des faces d'une BoxGeometry : [+X, -X, +Y, -Y, +Z, -Z]
+   ======================================================================= */
+var W=BOOK.W, H=BOOK.H, D=BOOK.D, T_=BOOK.T, OV=BOOK.overhang;
+
+var book = new THREE.Group();
+
+/* Les plats s'arretent a la charniere, la ou commence le dos : aucune face
+   coplanaire entre les meshes, donc plus de z-fighting (le clignotement). */
+var bw = W - T_;               // largeur imprimee d'un plat
+var bx = T_/2;                 // son centre, decale vers +X
+var BV = BOOK.bevel, CR = BOOK.corner;
+
+/* Chaque element de couverture est un panneau chanfreine. Groupes de materiaux :
+   0 = face imprimee (l'illustration s'enroule sur l'arrondi), 1 = tranche, 2 = interieur. */
+var platGeo = beveledPanel(bw, H, T_, BV, CR);
+
+// plat avant : face imprimee vers +Z
+var front = new THREE.Mesh(platGeo, [matFront, edgeMat, edgeMat]);
+front.position.set(bx, 0, D/2 - T_/2);
+book.add(front);
+
+// plat arriere : meme panneau retourne, face imprimee vers -Z
+var back = new THREE.Mesh(platGeo.clone(), [matBack, edgeMat, edgeMat]);
+back.rotation.y = Math.PI;
+back.position.set(bx, 0, -D/2 + T_/2);
+book.add(back);
+
+// dos : panneau de D x H couche a plat, face imprimee vers -X
+var spine = new THREE.Mesh(
+  beveledPanel(D, H, T_, BV, CR),
+  [matSpine, edgeMat, edgeMat]
+);
+spine.rotation.y = -Math.PI/2;
+spine.position.x = -W/2 + T_/2;
+book.add(spine);
+
+// bloc de pages : retrait de la chasse, plus un jeu de 0,2 mm pour ne
+// jamais partager un plan avec les plats
+var gap = 0.02;
+var pw = W - T_ - OV - gap, ph = H - OV*2, pd = D - T_*2 - gap*2;
+var pages = new THREE.Mesh(
+  new THREE.BoxGeometry(pw, ph, pd),
+  [pageMat, pageInner, pageMat, pageMat, pageInner, pageInner]
+);
+pages.position.x = -W/2 + T_ + gap + pw/2;
+book.add(pages);
+
+scene.add(book);
+
+/* ---- ombre de contact : un plan sous le livre, pas de shadow map.
+   Le livre flotte, l'ombre reste au sol et se resserre quand il s'incline. ---- */
+function blobTexture(){
+  var s=256,c=document.createElement('canvas');c.width=c.height=s;
+  var g=c.getContext('2d');
+  var r=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  r.addColorStop(0,'rgba(0,0,0,.62)');
+  r.addColorStop(.45,'rgba(0,0,0,.30)');
+  r.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=r;g.fillRect(0,0,s,s);
+  return new THREE.CanvasTexture(c);
+}
+var shadow = new THREE.Mesh(
+  new THREE.PlaneGeometry(W*2.15, W*1.5),
+  new THREE.MeshBasicMaterial({map:blobTexture(), transparent:true, depthWrite:false})
+);
+shadow.rotation.x = -Math.PI/2;
+shadow.position.y = -H/2 - 1.1;
+/* ombre de contact retiree */
+
+/* =======================================================================
+   7. CONTROLES — on tourne l'objet, pas la camera. Inertie + retour au repos.
+   ======================================================================= */
+var rotY = LOOK.restY, rotX = LOOK.restX;   // rotation libre : drag + inertie
+var velY = 0, velX = 0;
+var hovY = 0, hovX = 0, hovTY = 0, hovTX = 0;  // parallaxe au survol, additive
+var dragging = false, lastX = 0, lastY = 0, idle = 0, touched = false;
+var el = renderer.domElement;
+var hint = document.getElementById('hint');
+
+function down(e){
+  dragging = true; idle = 0;
+  el.classList.add('dragging');
+  var p = e.touches ? e.touches[0] : e;
+  lastX = p.clientX; lastY = p.clientY;
+  if(!touched){ touched = true; hint.classList.add('gone'); }
+  if(e.cancelable) e.preventDefault();
+}
+function move(e){
+  var q = e.touches ? e.touches[0] : e;
+  if(!e.touches){
+    // survol : le livre s'oriente vers le curseur, aucun clic requis
+    var r = el.getBoundingClientRect();
+    hovTY =  ((q.clientX - r.left) / r.width  - 0.5) * 2 * LOOK.hoverY;
+    hovTX = -((q.clientY - r.top ) / r.height - 0.5) * 2 * LOOK.hoverX;
+  }
+  if(!dragging) return;
+  var p = q;
+  var dx = p.clientX - lastX, dy = p.clientY - lastY;
+  lastX = p.clientX; lastY = p.clientY;
+  velY = dx * LOOK.dragSpeed;
+  velX = -dy * LOOK.dragSpeed;
+  rotY += velY;
+  rotX = Math.max(-LOOK.tiltLimit, Math.min(LOOK.tiltLimit, rotX + velX));
+  if(e.cancelable) e.preventDefault();
+}
+function up(){ dragging = false; el.classList.remove('dragging'); }
+
+el.addEventListener('mousedown', down);
+window.addEventListener('mousemove', move);
+window.addEventListener('mouseup', up);
+// souris hors cadre : la parallaxe se remet au neutre
+el.addEventListener('mouseleave', function(){ hovTY = 0; hovTX = 0; });
+el.addEventListener('touchstart', down, {passive:false});
+window.addEventListener('touchmove', move, {passive:false});
+window.addEventListener('touchend', up);
+
+// clavier : accessibilite minimale
+el.tabIndex = 0;
+el.addEventListener('keydown', function(e){
+  var s = 0.12;
+  if(e.key==='ArrowLeft'){ rotY -= s; touched=true; hint.classList.add('gone'); }
+  if(e.key==='ArrowRight'){ rotY += s; touched=true; hint.classList.add('gone'); }
+  if(e.key==='ArrowUp'){ rotX = Math.max(-LOOK.tiltLimit, rotX - s); }
+  if(e.key==='ArrowDown'){ rotX = Math.min(LOOK.tiltLimit, rotX + s); }
+});
+
+/* =======================================================================
+   8. BOUCLE
+   ======================================================================= */
+function resize(){
+  var w = stage.clientWidth || window.innerWidth;
+  var h = stage.clientHeight || window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  // sur ecran etroit on recule pour garder le livre entier
+  var fit = Math.min(1, (w/h) / 0.72);
+  camera.position.z = 56 / Math.max(0.55, fit);
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+var running = false, clock = new THREE.Clock();
+
+function frame(){
+  if(!running) return;
+  requestAnimationFrame(frame);
+  var dt = Math.min(clock.getDelta(), 0.05);
+
+  if(!dragging){
+    velY *= LOOK.damping;
+    velX *= LOOK.damping;
+    rotY += velY;
+    rotX = Math.max(-LOOK.tiltLimit, Math.min(LOOK.tiltLimit, rotX + velX));
+
+    idle += dt;
+    var still = Math.abs(velY) < 0.0009 && Math.abs(velX) < 0.0009;
+    if(still && idle > 1.6){
+      // retour elastique vers la pose de repos, puis derive lente
+      rotX += (LOOK.restX - rotX) * Math.min(1, dt*1.6);
+      if(!reduce) rotY += LOOK.autoSpin * dt;
+    }
+  }
+
+  hovY += (hovTY - hovY) * LOOK.hoverEase;
+  hovX += (hovTX - hovX) * LOOK.hoverEase;
+
+  var totY = rotY + hovY;
+  var totX = Math.max(-LOOK.tiltLimit, Math.min(LOOK.tiltLimit, rotX + hovX));
+  book.rotation.y = totY;
+  book.rotation.x = totX;
+
+  // l'ombre se resserre et palit quand le livre s'incline ou se met de profil
+  var flat = Math.cos(totX);
+  var edgeOn = Math.abs(Math.sin(totY));
+  var sc = 0.72 + 0.28*flat - 0.16*edgeOn;
+  shadow.scale.set(sc, sc*(0.9+0.1*flat), 1);
+  shadow.material.opacity = 0.55 + 0.35*flat;
+
+  renderer.render(scene, camera);
+}
+
+function reveal(){
+  document.getElementById('loader').classList.add('gone');
+  if(!running){ running = true; clock.start(); frame(); }
+}
+
+// init paresseuse : on ne demarre que si le viewer est visible
+if('IntersectionObserver' in window){
+  var io = new IntersectionObserver(function(en){
+    en.forEach(function(x){
+      if(x.isIntersecting){ if(done>=pending) reveal(); io.disconnect(); }
+    });
+  });
+  io.observe(stage);
+}
+// filet de securite si les textures tardent
+setTimeout(function(){ if(!running) reveal(); }, 8000);
+
+/* =======================================================================
+   9. CALIBRAGE EN DIRECT — touche D, ou ?debug dans l'URL.
+   Les 4 curseurs qui decident du rendu. Le bouton copie un bloc pret
+   a coller dans l'objet LOOK en haut du fichier.
+   ======================================================================= */
+var panel = document.getElementById('panel');
+var normalMats = [pageMat].filter(function(m){ return m.normalMap; });
+var embossMat  = [matFront, matBack, matSpine].filter(function(m){ return m.normalMap; });
+var envTimer = null;
+
+function setLook(key, val){
+  LOOK[key] = val;
+  if(key === 'exposure'){
+    renderer.toneMappingExposure = val;
+  } else if(key === 'envIntensity'){
+    [matFront, matBack, matSpine].forEach(function(m){ m.envMapIntensity = val; });
+    boardMat.envMapIntensity = val * LOOK.boardEnv;
+    edgeMat.envMapIntensity  = val * LOOK.boardEnv * 0.7;
+    pageMat.envMapIntensity  = val * 0.85;
+  } else if(key === 'boardEnv'){
+    boardMat.envMapIntensity = LOOK.envIntensity * val;
+    edgeMat.envMapIntensity  = LOOK.envIntensity * val * 0.7;
+  } else if(key === 'paperSpec'){
+    [matFront, matBack, matSpine].forEach(function(m){ m.reflectivity = val; });
+  } else if(key === 'emboss'){
+    if(embossMat) embossMat.forEach(function(m){ m.normalScale.set(val, val); });
+  } else if(key === 'varnish'){
+    [matFront, matBack, matSpine].forEach(function(m){ m.clearcoat = val; });
+  } else if(key === 'varnishRough'){
+    [matFront, matBack, matSpine].forEach(function(m){ m.clearcoatRoughness = val; });
+  } else if(key === 'boardSpec'){
+    boardMat.reflectivity = val;
+    edgeMat.reflectivity  = val * 0.7;
+  } else if(key === 'frontFill' || key === 'sparkle'){
+    // regenerer l'env map coute cher : on attend que le curseur se pose
+    clearTimeout(envTimer);
+    envTimer = setTimeout(function(){ applyEnv(LOOK.frontFill); }, 90);
+  } else if(key === 'normalScale'){
+    normalMats.forEach(function(m){
+      var f = (m === pageMat) ? 0.68 : 1;   // les pages gardent un relief plus fin
+      m.normalScale.set(val * f, val * f);
+    });
+  }
+  var out = panel.querySelector('[data-v="' + key + '"]');
+  if(out) out.textContent = val.toFixed(2);
+}
+
+['exposure','envIntensity','frontFill','sparkle','paperSpec','emboss','varnish','varnishRough','normalScale','boardEnv','boardSpec'].forEach(function(key){
+  var sl = document.getElementById('s-' + key);
+  if(!sl) return;
+  sl.value = LOOK[key];
+  setLook(key, parseFloat(sl.value));
+  sl.addEventListener('input', function(){ setLook(key, parseFloat(sl.value)); });
+});
+
+var tint = document.getElementById('s-tint');
+tint.value = LOOK.boardTint;
+document.getElementById('tintv').textContent = LOOK.boardTint;
+tint.addEventListener('input', function(){
+  LOOK.boardTint = tint.value;
+  boardMat.color.set(tint.value);
+  edgeMat.color.set(tint.value);
+  document.getElementById('tintv').textContent = tint.value;
+});
+
+document.getElementById('copy').addEventListener('click', function(){
+  var txt = "exposure:     " + LOOK.exposure.toFixed(2) + ",\n" +
+            "envIntensity: " + LOOK.envIntensity.toFixed(2) + ",\n" +
+            "frontFill:    " + LOOK.frontFill.toFixed(2) + ",\n" +
+            "sparkle:      " + LOOK.sparkle.toFixed(2) + ",\n" +
+            "paperSpec:    " + LOOK.paperSpec.toFixed(2) + ",\n" +
+            "emboss:       " + LOOK.emboss.toFixed(2) + ",\n" +
+            "varnish:      " + LOOK.varnish.toFixed(2) + ",\n" +
+            "varnishRough: " + LOOK.varnishRough.toFixed(3) + ",\n" +
+            "normalScale:  " + LOOK.normalScale.toFixed(2) + ",\n" +
+            "boardEnv:     " + LOOK.boardEnv.toFixed(2) + ",\n" +
+            "boardSpec:    " + LOOK.boardSpec.toFixed(2) + ",\n" +
+            "boardTint:   '" + LOOK.boardTint + "',";
+  var btn = this;
+  function ok(){ btn.textContent = 'Copie \u2713'; setTimeout(function(){ btn.textContent = 'Copier les reglages'; }, 1400); }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(ok, function(){ window.prompt('Copiez :', txt); });
+  } else {
+    window.prompt('Copiez :', txt);
+  }
+});
+
+window.addEventListener('keydown', function(e){
+  if(e.key === 'd' || e.key === 'D') panel.classList.toggle('on');
+});
+if(location.search.indexOf('debug') >= 0) panel.classList.add('on');
+
+})();
+</script>
+</body>
+</html>
