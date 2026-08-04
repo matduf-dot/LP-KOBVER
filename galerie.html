@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Galerie — Kobver</title>
+<script>try{if(localStorage.getItem('kobverLang')==='en')document.documentElement.lang='en';}catch(e){}</script>
+<title data-en="Gallery — Kobver">Galerie — Kobver</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,6 +44,23 @@ body{background:var(--bg); color:var(--ink);
 .nav .btn{display:none}
 @media(min-width:920px){ .nav .btn{display:inline-flex} }
 @media(max-width:640px){ .nav-links{display:none} }
+
+/* ---- bouton de langue ---- */
+.nav-right{display:flex; align-items:center; gap:12px}
+.lang-btn{display:inline-flex; align-items:center; cursor:pointer;
+  background:var(--bg); color:var(--ink); border:1px solid var(--grid);
+  border-radius:999px; padding:7px 13px 7px 10px;
+  font:inherit; font-size:13.5px; font-weight:600; letter-spacing:.02em;
+  transition:color .25s, border-color .25s, transform .25s}
+.lang-btn:hover{color:var(--orange); border-color:var(--orange); transform:translateY(-1px)}
+.lang-opt{display:inline-flex; align-items:center; gap:7px}
+.lang-flag{width:20px; height:14px; flex:none; display:block; border-radius:2px;
+  box-shadow:0 0 0 1px rgba(22,20,21,.14)}
+/* on n'affiche que la langue vers laquelle on peut basculer */
+html:not([lang="en"]) .lang-opt-fr{display:none}
+html[lang="en"]      .lang-opt-en{display:none}
+@media(max-width:400px){ .lang-btn{padding:7px 11px 7px 9px} }
+
 
 .eyebrow{display:inline-flex; align-items:center; gap:9px; font-size:14.5px; font-weight:500;
   color:var(--ink); margin-bottom:14px}
@@ -157,68 +175,76 @@ body.lb-locked{overflow:hidden}
 <body>
 
 <header class="nav">
-  <a href="index.html" class="brand" aria-label="Kobver, accueil">
+  <a href="index.html" class="brand" aria-label="Kobver, accueil" data-en-aria="Kobver, home">
     <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="6" width="7.5" height="20" rx="2" fill="currentColor"/><rect x="13.5" y="6" width="7.5" height="20" rx="2" fill="currentColor" opacity=".62"/><rect x="21.6" y="8.4" width="7.5" height="20" rx="2" fill="currentColor" opacity=".34" transform="rotate(9 25.35 18.4)"/></svg>
     <span>KOBVER</span>
   </a>
-  <nav class="nav-links" aria-label="Navigation principale">
-    <a href="index.html#galerie">Galerie</a><a href="index.html#avis">Avis</a>
-    <a href="index.html#offre">Offre</a><a href="index.html#studio">Le studio</a>
+  <nav class="nav-links" aria-label="Navigation principale" data-en-aria="Main navigation">
+    <a href="index.html#galerie" data-en="Gallery">Galerie</a><a href="index.html#avis" data-en="Reviews">Avis</a>
+    <a href="index.html#offre" data-en="Pricing">Offre</a><a href="index.html#studio" data-en="The studio">Le studio</a>
   </nav>
-  <a href="index.html#offre" class="btn">Voir l'offre
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 15 15 5m0 0H8.33M15 5v6.67" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </a>
+  <div class="nav-right">
+    <button class="lang-btn" id="langBtn" type="button"
+            aria-label="Switch to English" data-en-aria="Passer en français"
+            title="English" data-en-title="Français">
+      <span class="lang-opt lang-opt-en"><svg class="lang-flag" viewBox="0 0 21 15" aria-hidden="true"><rect width="21" height="15" fill="#fff"/><g fill="#B22234"><rect width="21" height="1.15"/><rect y="2.31" width="21" height="1.15"/><rect y="4.62" width="21" height="1.15"/><rect y="6.92" width="21" height="1.15"/><rect y="9.23" width="21" height="1.15"/><rect y="11.54" width="21" height="1.15"/><rect y="13.85" width="21" height="1.15"/></g><rect width="8.4" height="8.08" fill="#3C3B6E"/><g fill="#fff"><circle cx="1.7" cy="1.6" r=".45"/><circle cx="4.2" cy="1.6" r=".45"/><circle cx="6.7" cy="1.6" r=".45"/><circle cx="2.95" cy="3.2" r=".45"/><circle cx="5.45" cy="3.2" r=".45"/><circle cx="1.7" cy="4.8" r=".45"/><circle cx="4.2" cy="4.8" r=".45"/><circle cx="6.7" cy="4.8" r=".45"/><circle cx="2.95" cy="6.4" r=".45"/><circle cx="5.45" cy="6.4" r=".45"/></g></svg><span>EN</span></span>
+      <span class="lang-opt lang-opt-fr"><svg class="lang-flag" viewBox="0 0 21 15" aria-hidden="true"><rect width="21" height="15" fill="#ED2939"/><rect width="14" height="15" fill="#fff"/><rect width="7" height="15" fill="#002395"/></svg><span>FR</span></span>
+    </button>
+    <a href="index.html#offre" class="btn" data-en="See pricing">Voir l'offre
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 15 15 5m0 0H8.33M15 5v6.67" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+  </div>
 </header>
 
 <main class="gp">
   <div class="gp-top">
     <a href="index.html" class="gp-return">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Retour à l'accueil</span>
+      <span data-en="Back to home">Retour à l'accueil</span>
     </a>
   </div>
 
   <div class="gp-head">
-    <div class="eyebrow"><span class="dot"></span><span>Galerie</span></div>
-    <h1 class="gp-title">Quelques réalisations</h1>
-    <p class="gp-count">18 couvertures</p>
+    <div class="eyebrow"><span class="dot"></span><span data-en="Gallery">Galerie</span></div>
+    <h1 class="gp-title" data-en="Selected work">Quelques réalisations</h1>
+    <p class="gp-count" data-en="18 covers">18 couvertures</p>
   </div>
 
   <div class="gp-grid" id="gpGrid"></div>
 
   <div class="gp-back">
-    <a href="index.html" class="btn">Retour à l'accueil
+    <a href="index.html" class="btn" data-en="Back to home">Retour à l'accueil
       <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 15 15 5m0 0H8.33M15 5v6.67" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
   </div>
 </main>
 
-<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Couverture en grand">
+<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Couverture en grand" data-en-aria="Cover enlarged">
   <div class="lb-stage">
     <img class="lb-img" id="lbImg" src="" alt="">
   </div>
   <p class="lb-cap" id="lbCap"></p>
 
-  <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Fermer">
+  <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Fermer" data-en-aria="Close">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
   </button>
-  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="Couverture précédente">
+  <button class="lb-btn lb-prev" id="lbPrev" type="button" aria-label="Couverture précédente" data-en-aria="Previous cover">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
-  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="Couverture suivante">
+  <button class="lb-btn lb-next" id="lbNext" type="button" aria-label="Couverture suivante" data-en-aria="Next cover">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
 </div>
 
 <footer class="foot">
   <div class="foot-inner">
-    <a href="index.html" class="foot-brand" aria-label="Kobver, retour en haut">
+    <a href="index.html" class="foot-brand" aria-label="Kobver, retour en haut" data-en-aria="Kobver, back to top">
       <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="6" width="7.5" height="20" rx="2" fill="currentColor"/><rect x="13.5" y="6" width="7.5" height="20" rx="2" fill="currentColor" opacity=".62"/><rect x="21.6" y="8.4" width="7.5" height="20" rx="2" fill="currentColor" opacity=".34" transform="rotate(9 25.35 18.4)"/></svg>
       <span>KOBVER</span>
     </a>
 
     <a href="https://instagram.com/" target="_blank" rel="noopener"
-       class="foot-social" aria-label="Kobver sur Instagram">
+       class="foot-social" aria-label="Kobver sur Instagram" data-en-aria="Kobver on Instagram">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25" stroke="currentColor" stroke-width="1.7"/>
         <circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.7"/>
@@ -228,7 +254,7 @@ body.lb-locked{overflow:hidden}
 
     <div class="foot-credit">
       <a href="mailto:contact@kobver.com">contact@kobver.com</a>
-      <span>Créé par Mathis Dufour</span>
+      <span data-en="Created by Mathis Dufour">Créé par Mathis Dufour</span>
     </div>
   </div>
 </footer>
@@ -252,6 +278,7 @@ var COVERS = [{"t":"Eclipse","d":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQA
     b.className = 'gp-item';
     b.type = 'button';
     b.setAttribute('aria-label', 'Agrandir : ' + c.t);
+    b.setAttribute('data-en-aria', 'Zoom in: ' + c.t);
     var img = document.createElement('img');
     img.src = c.d;
     img.alt = c.t;
@@ -266,6 +293,8 @@ var COVERS = [{"t":"Eclipse","d":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQA
     b.addEventListener('click', function(){ open(i); });
     grid.appendChild(b);
   });
+  /* la grille vient d etre creee : on lui applique la langue courante */
+  if (window.kobverApplyLang) window.kobverApplyLang();
 
   /* ---- lightbox ---- */
   function show(i){
@@ -304,6 +333,69 @@ var COVERS = [{"t":"Eclipse","d":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQA
     if (e.key === 'ArrowLeft')  { e.preventDefault(); show(index - 1); }
     if (e.key === 'ArrowRight') { e.preventDefault(); show(index + 1); }
   });
+})();
+</script>
+
+<script>
+/* Bascule FR/EN : le francais reste dans le HTML, l'anglais vit dans data-en.
+   Le choix est memorise et partage entre index.html et galerie.html. */
+(function(){
+  var KEY = 'kobverLang';
+
+  /* ne remplace que le premier noeud texte : les enfants (svg, pastilles) restent */
+  function firstTextNode(el){
+    for (var i = 0; i < el.childNodes.length; i++){
+      var n = el.childNodes[i];
+      if (n.nodeType === 3 && n.textContent.trim()) return n;
+    }
+    return null;
+  }
+  function readText(el){ var n = firstTextNode(el); return n ? n.textContent : el.textContent; }
+  function writeText(el, txt){
+    var n = firstTextNode(el);
+    if (n) n.textContent = txt; else el.textContent = txt;
+  }
+
+  var ATTRS = [['data-en-alt','alt'], ['data-en-aria','aria-label'], ['data-en-title','title']];
+
+  function apply(lang){
+    document.documentElement.lang = lang;
+
+    var els = document.querySelectorAll('[data-en]');
+    for (var i = 0; i < els.length; i++){
+      var el = els[i];
+      if (!el.hasAttribute('data-fr')) el.setAttribute('data-fr', readText(el));
+      writeText(el, lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-fr'));
+    }
+
+    for (var a = 0; a < ATTRS.length; a++){
+      var src = ATTRS[a][0], dest = ATTRS[a][1], keep = 'data-fr-' + dest;
+      var list = document.querySelectorAll('[' + src + ']');
+      for (var j = 0; j < list.length; j++){
+        var e = list[j];
+        if (!e.hasAttribute(keep)) e.setAttribute(keep, e.getAttribute(dest) || '');
+        e.setAttribute(dest, lang === 'en' ? e.getAttribute(src) : e.getAttribute(keep));
+      }
+    }
+  }
+
+  function current(){
+    try { return localStorage.getItem(KEY) === 'en' ? 'en' : 'fr'; } catch(e){ return 'fr'; }
+  }
+
+  /* les couvertures sont injectees par JS : on repasse apres leur construction */
+  window.kobverApplyLang = function(){ apply(current()); };
+
+  apply(current());
+
+  var btn = document.getElementById('langBtn');
+  if (btn) btn.addEventListener('click', function(){
+    var next = current() === 'en' ? 'fr' : 'en';
+    try { localStorage.setItem(KEY, next); } catch(e){}
+    apply(next);
+  });
+
+  window.addEventListener('load', function(){ apply(current()); });
 })();
 </script>
 
