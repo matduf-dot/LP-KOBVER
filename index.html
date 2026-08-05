@@ -210,7 +210,10 @@ html[lang="en"]      .lang-opt-en{display:none}
 .proof-grid{display:grid; grid-template-columns:minmax(0,300px) minmax(0,540px) minmax(0,232px);
   gap:clamp(20px,2.6vw,34px); align-items:start; justify-content:start}
 @media(max-width:1180px){ .proof-grid{grid-template-columns:minmax(0,300px) minmax(0,540px)} }
-@media(max-width:820px){ .proof-grid{grid-template-columns:1fr; gap:34px} }
+/* minmax(0,...) et pas 1fr : une piste 1fr ne descend pas sous la largeur mini
+   de son contenu, et les captures declarent width="1100". Tant qu'elles ne sont
+   pas chargees, la grille tenait 1100px de large et le bloc partait hors ecran. */
+@media(max-width:820px){ .proof-grid{grid-template-columns:minmax(0,1fr); gap:34px} }
 
 /* ---- comparateur ---- */
 .ba{position:relative; margin:0; aspect-ratio:2/3; border-radius:6px; overflow:hidden;
@@ -242,12 +245,64 @@ html[lang="en"]      .lang-opt-en{display:none}
 .proof-lead em{font-style:italic}
 
 .shots{display:flex; flex-direction:column; gap:clamp(14px,1.8vw,22px)}
-.shot{width:100%; display:block; border-radius:12px; border:1px solid var(--grid);
+/* height:auto est indispensable : sur l'axe principal d'un flex en colonne, une
+   image sans hauteur declaree garde sa hauteur native pendant que width:100%
+   reduit sa largeur. object-fit valant fill, elle etait ecrasee a l'horizontale
+   (x2,1 en desktop, x3,3 a 375px). */
+.shot{width:100%; height:auto; display:block; border-radius:12px; border:1px solid var(--grid);
   background:#fff; box-shadow:0 14px 34px rgba(22,20,21,.12)}
 /* le profil Insta est plus large que haut : on le bride pour que la colonne
    se termine au niveau du bas de la couverture */
 .shot-insta{max-width:310px}
 @media(max-width:820px){ .shot-insta{max-width:none} }
+
+/* ---- captures recadrees, sous 640px ----
+   Une capture desktop de 1100px ramenee a 335px tombe a 0,30x : le texte de la
+   fiche produit passe a 4px. On ne la reduit donc pas, on decoupe les zones qui
+   portent l'information et on les reaffiche a l'echelle 1 ou presque.
+
+   .crop = fenetre sur une zone de l'image source, decrite en pixels de cette
+   source : --iw largeur native du fichier, --sx/--sy origine de la zone,
+   --sw/--sh ses dimensions. Le conteneur prend le ratio de la zone ; l'image est
+   agrandie de (100% * iw/sw) et decalee. Les pourcentages de margin se calculent
+   sur la largeur du conteneur, d'ou le denominateur --sw dans les deux axes. */
+.crop{position:relative; overflow:hidden; aspect-ratio:calc(var(--sw)/var(--sh))}
+.crop img{position:absolute; top:0; left:0; height:auto; max-width:none;
+  width:calc(100% * var(--iw) / var(--sw));
+  margin-left:calc(-100% * var(--sx) / var(--sw));
+  margin-top:calc(-100% * var(--sy) / var(--sw))}
+
+.shots-mob{display:none}
+@media(max-width:640px){
+  .shots-mob{display:flex; flex-direction:column; gap:14px}
+  .shots{display:none}
+
+  /* La carte Amazon empile le bloc texte puis la couverture, plutot que de les
+     mettre cote a cote : en deux colonnes le texte tombait a 0,55x et le titre
+     redevenait illisible. Pleine largeur, on tient 0,84x.
+     Une seule zone pour les trois lignes, sinon chacune s'afficherait a une
+     echelle differente et la note ressortait plus grosse que le titre. Le titre
+     court jusqu'a x=683, la ligne du dessous jusqu'a x=790 : on cadre a 741 et
+     on fond le bord droit pour que la coupure ne se lise pas. */
+  .card-amazon{--iw:1100;
+    display:flex; flex-direction:column; align-items:flex-start; gap:11px; padding:12px;
+    background:#fff; border:1px solid var(--grid); border-radius:12px;
+    box-shadow:0 14px 34px rgba(22,20,21,.12)}
+  .card-amazon .zone-fiche{--sx:341; --sy:10; --sw:400; --sh:80; width:100%;
+    -webkit-mask-image:linear-gradient(to right,#000 87%,transparent);
+            mask-image:linear-gradient(to right,#000 87%,transparent)}
+  .card-amazon .zone-couv{--sx:24; --sy:12; --sw:277; --sh:444;
+    width:86px; border-radius:3px}
+
+  /* la carte Instagram reprend le fond sombre de la capture d'origine */
+  .card-insta{--iw:620;
+    display:flex; align-items:center; gap:12px; padding:12px;
+    background:#0C1015; border:1px solid rgba(255,255,255,.09); border-radius:12px;
+    box-shadow:0 14px 34px rgba(22,20,21,.12)}
+  .card-insta .zone-avatar{--sx:60; --sy:34; --sw:130; --sh:130;
+    flex:none; width:62px; border-radius:50%}
+  .card-insta .zone-profil{--sx:193; --sy:16; --sw:245; --sh:68; flex:1; min-width:0}
+}
 
 .proof-cta{align-self:flex-start}
 
@@ -559,6 +614,24 @@ html[lang="en"]      .lang-opt-en{display:none}
       <div class="shots">
         <img class="shot" data-src="assets/img/preuve-amazon.webp" alt="Fiche Amazon de Dot Slash Magic : 4,4 sur 5, 207 avis, édité par Angry Robot" data-en-alt="Amazon listing for Dot Slash Magic: 4.4 out of 5, 207 reviews, published by Angry Robot" width="1100" height="626" loading="lazy" decoding="async"><noscript><img class="shot" src="assets/img/preuve-amazon.webp" alt="Fiche Amazon de Dot Slash Magic : 4,4 sur 5, 207 avis, édité par Angry Robot" data-en-alt="Amazon listing for Dot Slash Magic: 4.4 out of 5, 207 reviews, published by Angry Robot" width="1100" height="626"></noscript>
         <img class="shot shot-insta" data-src="assets/img/preuve-instagram.webp" alt="Profil Instagram de Liz Shipton : 83 000 abonnés" data-en-alt="Liz Shipton's Instagram profile: 83,000 followers" width="620" height="270" loading="lazy" decoding="async"><noscript><img class="shot shot-insta" src="assets/img/preuve-instagram.webp" alt="Profil Instagram de Liz Shipton : 83 000 abonnés" data-en-alt="Liz Shipton's Instagram profile: 83,000 followers" width="620" height="270"></noscript>
+      </div>
+
+      <!-- Sous 640px, les memes captures recadrees sur ce qui porte l'information.
+           display:none au-dessus : l'observateur ne revele jamais ces images, elles
+           ne sont donc pas telechargees en desktop. -->
+      <div class="shots-mob">
+        <div class="card-amazon" role="img"
+             aria-label="Fiche Amazon de Dot Slash Magic : 4,4 sur 5, 207 avis, édité par Angry Robot"
+             data-en-aria="Amazon listing for Dot Slash Magic: 4.4 out of 5, 207 reviews, published by Angry Robot">
+          <div class="crop zone-fiche"><img data-src="assets/img/preuve-amazon.webp" alt="" width="1100" height="626" decoding="async"></div>
+          <div class="crop zone-couv"><img data-src="assets/img/preuve-amazon.webp" alt="" width="1100" height="626" decoding="async"></div>
+        </div>
+        <div class="card-insta" role="img"
+             aria-label="Profil Instagram de Liz Shipton : 83 000 abonnés"
+             data-en-aria="Liz Shipton's Instagram profile: 83,000 followers">
+          <div class="crop zone-avatar"><img data-src="assets/img/preuve-instagram.webp" alt="" width="620" height="270" decoding="async"></div>
+          <div class="crop zone-profil"><img data-src="assets/img/preuve-instagram.webp" alt="" width="620" height="270" decoding="async"></div>
+        </div>
       </div>
 
       <div class="proof-video">
@@ -978,14 +1051,36 @@ var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The 
       i.width = c.w; i.height = c.h;
       i.alt = 'Couverture — ' + c.t;
       i.setAttribute('data-en-alt', 'Cover — ' + c.t);
-      /* le bandeau depasse largement l'ecran : seules les vignettes qui
-         entrent dans le champ declenchent une requete */
+      /* pas d'observateur par vignette ici : les bandes avancent par une
+         animation transform compositee, que l'IntersectionObserver ne suit pas
+         de facon fiable. La moitie des vignettes n'obtenait jamais son src et
+         defilait en image cassee. C'est la section entiere qu'on observe, plus
+         bas, et on revele les 12 fichiers d'un coup. */
       i.setAttribute('data-src', KOBVER_IMG(c.f));
-      KOBVER_LAZY(i);
       d.appendChild(i); frag.appendChild(d);
     });
     row.innerHTML = '';
     row.appendChild(frag);
+    if(revele) reveler();
+  }
+
+  /* les deux bandes ne comptent que 12 fichiers distincts, repetes : les
+     reveler ensemble ne coute donc que 12 requetes. */
+  var section = document.getElementById('galerie');
+  var revele = false;
+  function reveler(){
+    var l = section.querySelectorAll('img[data-src]');
+    for(var i=0; i<l.length; i++){
+      l[i].src = l[i].getAttribute('data-src');
+      l[i].removeAttribute('data-src');
+    }
+  }
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(entries, obs){
+      if(entries[0].isIntersecting){ revele = true; reveler(); obs.disconnect(); }
+    }, {rootMargin:'600px 0px'}).observe(section);
+  } else {
+    revele = true;
   }
 
   /* une couverture n'apparaît que dans une seule des deux bandes :
@@ -994,8 +1089,13 @@ var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The 
   var b = GALLERY.filter(function(_,i){ return i % 2 === 1; });
   fill(r1, a); fill(r2, b);
 
-  var t;
+  /* On ne reconstruit que si la largeur a bouge. Sur telephone, scroller replie
+     la barre d'URL : la hauteur change, resize part, et reconstruire remettait
+     les 48 vignettes a data-src (bande vide) en relancant l'animation a zero. */
+  var t, largeur = window.innerWidth;
   window.addEventListener('resize', function(){
+    if(window.innerWidth === largeur) return;
+    largeur = window.innerWidth;
     clearTimeout(t); t = setTimeout(function(){ fill(r1, a); fill(r2, b); }, 250);
   });
 })();

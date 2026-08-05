@@ -156,9 +156,13 @@ html[lang="en"]      .lang-opt-en{display:none}
 .gp-cap{position:absolute; left:0; right:0; bottom:0; padding:22px 10px 9px;
   font-size:12px; font-weight:500; color:#fff; text-align:center;
   background:linear-gradient(to top,rgba(0,0,0,.62),transparent);
+  /* le degrade seul ne suffit pas sur les couvertures tres claires */
+  text-shadow:0 1px 3px rgba(0,0,0,.75);
   opacity:0; transition:opacity .28s}
 .gp-item:hover .gp-cap,.gp-item:focus-visible .gp-cap{opacity:1}
-@media(hover:none){ .gp-cap{opacity:1} }   /* au doigt, pas de survol : toujours visible */
+/* au doigt, pas de survol : la legende reste affichee. Les titres longs passent
+   sur deux lignes, le degrade est donc remonte pour rester lisible. */
+@media(hover:none){ .gp-cap{opacity:1; padding-top:38px} }
 
 .gp-back{display:flex; justify-content:center; margin-top:clamp(38px,6vh,64px)}
 
@@ -191,7 +195,9 @@ body.lb-locked{overflow:hidden}
   /* la rangee de boutons est en bas : on lui reserve sa hauteur
      pour que la legende ne passe pas dessous */
   .lb{padding:10px 10px calc(76px + env(safe-area-inset-bottom))}
-  .lb-img{width:96vw; height:70vh}
+  /* dvh et pas vh : vh vaut la hauteur barre d'URL repliee, donc barre visible
+     l'image poussait la legende et la rangee de boutons hors du champ. */
+  .lb-img{width:96vw; height:70vh; height:70dvh}
   .lb-cap{font-size:13.5px; padding:0 12px 4px}
   /* au pouce : croix et fleches ramenees en bas, hors de la zone haute */
   .lb-close{top:auto; bottom:calc(14px + env(safe-area-inset-bottom)); right:14px; width:52px; height:52px}
@@ -361,8 +367,34 @@ var COVERS = [{"t": "Eclipse", "f": "eclipse", "w": 306, "h": 460}, {"t": "The C
 
   /* clic sur le fond : on ferme, mais pas si le clic vient de l'image ou d'un bouton */
   lb.addEventListener('click', function(e){
+    if (glisse) return;   /* fin de swipe : le navigateur emet quand meme un click */
     if (e.target === lb || e.target.classList.contains('lb-stage')) close();
   });
+
+  /* ---- gestes au doigt ----
+     Sans ca, sur telephone, on ne changeait d'image qu'en visant les deux
+     boutons de 52px en bas d'ecran. */
+  var x0 = 0, y0 = 0, suivi = false, glisse = false;
+  lb.addEventListener('touchstart', function(e){
+    if (e.touches.length !== 1) { suivi = false; return; }
+    suivi = true; glisse = false;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, {passive:true});
+  lb.addEventListener('touchmove', function(e){
+    if (!suivi) return;
+    if (Math.abs(e.touches[0].clientX - x0) > 12 ||
+        Math.abs(e.touches[0].clientY - y0) > 12) glisse = true;
+  }, {passive:true});
+  lb.addEventListener('touchend', function(e){
+    if (!suivi) return;
+    suivi = false;
+    var dx = e.changedTouches[0].clientX - x0;
+    var dy = e.changedTouches[0].clientY - y0;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) show(index + (dx < 0 ? 1 : -1));
+    else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) close();
+    /* glisse reste vrai jusqu'au geste suivant : le click emis apres ce touchend
+       ne doit pas etre pris pour un clic sur le fond. */
+  }, {passive:true});
 
   document.addEventListener('keydown', function(e){
     if (!lb.classList.contains('is-open')) return;
