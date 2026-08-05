@@ -1031,7 +1031,7 @@ var COVERS = [{"t": "The Song of Embers", "w": 300, "h": 447, "f": "the-song-of-
 <script>
 /* Galerie : deux bandes qui défilent en sens inverse.
    Les images ne sont écrites qu'une fois, le JS remplit les bandes. */
-var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The Crown of High Skies", "w": 308, "h": 460, "f": "the-crown-of-high-skies"}, {"t": "The Bus Ride to Bordentown", "w": 287, "h": 460, "f": "the-bus-ride-to-bordentown"}, {"t": "Aurora", "w": 287, "h": 460, "f": "aurora"}, {"t": "Mother", "w": 325, "h": 460, "f": "mother"}, {"t": "Sauve ton CRFPA 2026", "w": 287, "h": 460, "f": "sauve-ton-crfpa-2026"}, {"t": "Tainted Embrace", "w": 309, "h": 460, "f": "tainted-embrace"}, {"t": "Orléans tells its sporting story", "w": 325, "h": 460, "f": "orleans-tells-its-sporting-story"}, {"t": "Wilshire — L’héritage du chaos", "w": 298, "h": 460, "f": "wilshire-l-heritage-du-chaos"}, {"t": "Rouge à lèvres", "w": 287, "h": 460, "f": "rouge-a-levres"}, {"t": "Les morts devraient rester silencieux", "w": 306, "h": 460, "f": "les-morts-devraient-rester-silencieux"}, {"t": "How the Night Hunts", "w": 306, "h": 460, "f": "how-the-night-hunts"}];
+var GALLERY = [{"t":"Eclipse","w":306,"h":460,"f":"eclipse","c":"#080818"},{"t":"The Crown of High Skies","w":308,"h":460,"f":"the-crown-of-high-skies","c":"#b84828"},{"t":"The Bus Ride to Bordentown","w":287,"h":460,"f":"the-bus-ride-to-bordentown","c":"#081828"},{"t":"Aurora","w":287,"h":460,"f":"aurora","c":"#080808"},{"t":"Mother","w":325,"h":460,"f":"mother","c":"#d8e8e8"},{"t":"Sauve ton CRFPA 2026","w":287,"h":460,"f":"sauve-ton-crfpa-2026","c":"#480828"},{"t":"Tainted Embrace","w":309,"h":460,"f":"tainted-embrace","c":"#080808"},{"t":"Orléans tells its sporting story","w":325,"h":460,"f":"orleans-tells-its-sporting-story","c":"#38a828"},{"t":"Wilshire — L’héritage du chaos","w":298,"h":460,"f":"wilshire-l-heritage-du-chaos","c":"#180818"},{"t":"Rouge à lèvres","w":287,"h":460,"f":"rouge-a-levres","c":"#b80808"},{"t":"Les morts devraient rester silencieux","w":306,"h":460,"f":"les-morts-devraient-rester-silencieux","c":"#080808"},{"t":"How the Night Hunts","w":306,"h":460,"f":"how-the-night-hunts","c":"#081818"}];
 
 (function(){
   var r1 = document.getElementById('galRow1');
@@ -1050,12 +1050,17 @@ var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The 
     seq.forEach(function(c){
       var d = document.createElement('div');
       d.className = 'gal-item';
-      /* la tuile connait ses proportions avant meme que l'image arrive */
+      /* la tuile connait ses proportions avant meme que l'image arrive, et
+         porte la couleur dominante de sa couverture : sur reseau lent le
+         bandeau se revele au lieu de faire defiler des trous gris */
       d.style.setProperty('--ratio', c.w + ' / ' + c.h);
+      d.style.backgroundColor = c.c;
       var i = document.createElement('img');
-      /* loading et les dimensions AVANT src : une fois le src pose, la
-         requete est deja partie et l'attribut lazy n'a plus aucun effet */
-      i.loading = 'lazy'; i.decoding = 'async';
+      /* eager, pas lazy : c'est nous qui decidons du moment via data-src, plus
+         bas. Laisser loading="lazy" ajoutait par-dessus l'heuristique du
+         navigateur, et WebKit gardait ainsi 16 vignettes sur 48 avec un src
+         qu'il ne telechargeait jamais. */
+      i.loading = 'eager'; i.decoding = 'async';
       i.width = c.w; i.height = c.h;
       i.alt = 'Couverture — ' + c.t;
       i.setAttribute('data-en-alt', 'Cover — ' + c.t);

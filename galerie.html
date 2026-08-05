@@ -152,7 +152,9 @@ html[lang="en"]      .lang-opt-en{display:none}
   box-shadow:0 8px 20px rgba(22,20,21,.13);
   transition:transform .28s cubic-bezier(.22,.61,.36,1), box-shadow .28s}
 .gp-item:hover{transform:translateY(-4px); box-shadow:0 16px 32px rgba(22,20,21,.2)}
-.gp-item img{width:100%; height:auto; display:block; background:var(--grid-block)}
+/* pas de fond ici : c'est le bouton qui porte la couleur dominante de la
+   couverture, l'image doit la laisser voir tant qu'elle n'est pas arrivee */
+.gp-item img{width:100%; height:auto; display:block}
 .gp-cap{position:absolute; left:0; right:0; bottom:0; padding:22px 10px 9px;
   font-size:12px; font-weight:500; color:#fff; text-align:center;
   background:linear-gradient(to top,rgba(0,0,0,.62),transparent);
@@ -297,7 +299,7 @@ body.lb-locked{overflow:hidden}
 </footer>
 
 <script>
-var COVERS = [{"t": "Eclipse", "f": "eclipse", "w": 306, "h": 460}, {"t": "The Crown of High Skies", "f": "the-crown-of-high-skies", "w": 308, "h": 460}, {"t": "The Bus Ride to Bordentown", "f": "the-bus-ride-to-bordentown", "w": 287, "h": 460}, {"t": "Aurora", "f": "aurora", "w": 287, "h": 460}, {"t": "Mother", "f": "mother", "w": 325, "h": 460}, {"t": "Sauve ton CRFPA 2026", "f": "sauve-ton-crfpa-2026", "w": 287, "h": 460}, {"t": "Tainted Embrace", "f": "tainted-embrace", "w": 309, "h": 460}, {"t": "Orléans tells its sporting story", "f": "orleans-tells-its-sporting-story", "w": 325, "h": 460}, {"t": "Wilshire — L’héritage du chaos", "f": "wilshire-l-heritage-du-chaos", "w": 298, "h": 460}, {"t": "Rouge à lèvres", "f": "rouge-a-levres", "w": 287, "h": 460}, {"t": "Les morts devraient rester silencieux", "f": "les-morts-devraient-rester-silencieux", "w": 306, "h": 460}, {"t": "How the Night Hunts", "f": "how-the-night-hunts", "w": 306, "h": 460}, {"t": "The Song of Embers", "f": "the-song-of-embers", "w": 300, "h": 447}, {"t": "The Silent Verdict", "f": "the-silent-verdict", "w": 300, "h": 456}, {"t": "Silk and Petals", "f": "silk-and-petals", "w": 300, "h": 456}, {"t": "Empress of Tides", "f": "empress-of-tides", "w": 300, "h": 447}, {"t": "Mildred Magillicuddy", "f": "mildred-magillicuddy", "w": 300, "h": 450}, {"t": "Mon journal intime de PMA", "f": "mon-journal-intime-de-pma", "w": 300, "h": 478}];
+var COVERS = [{"t":"Eclipse","f":"eclipse","w":306,"h":460,"c":"#080818"},{"t":"The Crown of High Skies","f":"the-crown-of-high-skies","w":308,"h":460,"c":"#b84828"},{"t":"The Bus Ride to Bordentown","f":"the-bus-ride-to-bordentown","w":287,"h":460,"c":"#081828"},{"t":"Aurora","f":"aurora","w":287,"h":460,"c":"#080808"},{"t":"Mother","f":"mother","w":325,"h":460,"c":"#d8e8e8"},{"t":"Sauve ton CRFPA 2026","f":"sauve-ton-crfpa-2026","w":287,"h":460,"c":"#480828"},{"t":"Tainted Embrace","f":"tainted-embrace","w":309,"h":460,"c":"#080808"},{"t":"Orléans tells its sporting story","f":"orleans-tells-its-sporting-story","w":325,"h":460,"c":"#38a828"},{"t":"Wilshire — L’héritage du chaos","f":"wilshire-l-heritage-du-chaos","w":298,"h":460,"c":"#180818"},{"t":"Rouge à lèvres","f":"rouge-a-levres","w":287,"h":460,"c":"#b80808"},{"t":"Les morts devraient rester silencieux","f":"les-morts-devraient-rester-silencieux","w":306,"h":460,"c":"#080808"},{"t":"How the Night Hunts","f":"how-the-night-hunts","w":306,"h":460,"c":"#081818"},{"t":"The Song of Embers","f":"the-song-of-embers","w":300,"h":447,"c":"#081838"},{"t":"The Silent Verdict","f":"the-silent-verdict","w":300,"h":456,"c":"#081818"},{"t":"Silk and Petals","f":"silk-and-petals","w":300,"h":456,"c":"#481818"},{"t":"Empress of Tides","f":"empress-of-tides","w":300,"h":447,"c":"#081828"},{"t":"Mildred Magillicuddy","f":"mildred-magillicuddy","w":300,"h":450,"c":"#f8e8b8"},{"t":"Mon journal intime de PMA","f":"mon-journal-intime-de-pma","w":300,"h":478,"c":"#f87888"}];
 
 (function(){
   var grid  = document.getElementById('gpGrid');
@@ -316,6 +318,9 @@ var COVERS = [{"t": "Eclipse", "f": "eclipse", "w": 306, "h": 460}, {"t": "The C
     b.type = 'button';
     b.setAttribute('aria-label', 'Agrandir : ' + c.t);
     b.setAttribute('data-en-aria', 'Zoom in: ' + c.t);
+    /* couleur dominante de la couverture : le temps qu'elle arrive, la tuile
+       est deja a sa teinte plutot qu'en gris. Rien de plus a telecharger. */
+    b.style.backgroundColor = c.c;
     var img = document.createElement('img');
     /* les premieres sont visibles d'emblee, le reste se charge en differe.
        Tout se pose AVANT le src : sinon la requete part immediatement et
@@ -345,6 +350,7 @@ var COVERS = [{"t": "Eclipse", "f": "eclipse", "w": 306, "h": 460}, {"t": "The C
     var c = COVERS[index];
     lbImg.src = KOBVER_IMG(c.f);
     lbImg.alt = c.t;
+    lbImg.style.backgroundColor = c.c;   /* meme teinte le temps du chargement */
     lbCap.textContent = c.t + '  (' + (index + 1) + '/' + COVERS.length + ')';
   }
   function open(i){
