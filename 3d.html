@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- page de capture atteignable uniquement par le lien TikTok : hors index -->
+<meta name="robots" content="noindex, follow">
+<title>Get your 3D book cover for free</title>
+
+<script>
+/* Cette page n'existe qu'en anglais, et son trafic vient de TikTok. On memorise
+   donc la langue avant meme le rendu : index.html et galerie.html lisent la meme
+   cle et s'afficheront en anglais des le clic sur KOBVER, au lieu du francais
+   par defaut. Une visite directe sur le site, sans passer par ici, n'ecrit rien
+   et reste donc en francais. */
+try{ localStorage.setItem('kobverLang','en'); }catch(e){}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* Tokens repris tels quels de index.html — aucune valeur inventee. */
+:root{
+  --bg:#FCFAF8; --grid:#EFECE8; --grid-block:#F1EEEA;
+  --ink:#161415; --ink-soft:#6B6663;
+  --orange:#FF6341; --orange-dark:#E8482A;
+  --peach:#F6C79A; --blue:#A9C9FF; --violet:#C4B0F0; --plum:#2B1B3D;
+  --cell:158px; --nav-h:72px;
+}
+@media(max-width:1100px){ :root{--cell:120px} }
+@media(max-width:700px){  :root{--cell:92px}  }
+
+*{margin:0;padding:0;box-sizing:border-box}
+/* pas d'overflow ici : rien ne doit creer de conteneur de defilement
+   au-dessus de l'iframe Tally (hauteur pilotee par le script). */
+body{background:var(--bg); color:var(--ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased}
+
+/* NAV — version logo seul, il n'y a rien a naviguer sur cette page */
+.nav{position:relative; z-index:20; height:var(--nav-h);
+  display:flex; align-items:center; justify-content:flex-start; gap:24px;
+  padding:0 clamp(18px,3.4vw,56px); background:var(--bg); border-bottom:1px solid var(--grid)}
+.brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink)}
+.brand-mark{width:28px; height:28px; flex:none; display:block; color:var(--orange)}
+.brand span{font-weight:700; font-size:19px; letter-spacing:.14em}
+
+.btn{display:inline-flex; align-items:center; gap:9px; background:var(--orange); color:#fff;
+  text-decoration:none; font-size:14.5px; font-weight:600; padding:11px 22px; border-radius:999px;
+  box-shadow:0 0 0 4px rgba(255,99,65,.18);
+  transition:background .25s, box-shadow .25s, transform .25s; white-space:nowrap}
+.btn:hover{background:var(--orange-dark); box-shadow:0 0 0 7px rgba(255,99,65,.2); transform:translateY(-1px)}
+.btn svg{width:16px; height:16px; transition:transform .3s}
+.btn:hover svg{transform:translate(2px,-2px)}
+.btn-ghost{background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1.5px rgba(22,20,21,.16)}
+.btn-ghost:hover{background:rgba(22,20,21,.04); box-shadow:inset 0 0 0 1.5px rgba(22,20,21,.3)}
+
+/* HERO */
+.head{position:relative; overflow:hidden; text-align:center;
+  padding:clamp(38px,7vh,78px) 20px clamp(26px,4vh,40px)}
+.grid-bg{position:absolute; inset:0; z-index:0; pointer-events:none;
+  background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px),
+                   linear-gradient(to bottom,var(--grid) 1px,transparent 1px);
+  background-size:var(--cell) var(--cell);
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 52%,transparent 92%);
+          mask-image:linear-gradient(to bottom,#000 0%,#000 52%,transparent 92%)}
+.head-inner{position:relative; z-index:2; max-width:760px; margin:0 auto}
+
+/* eyebrow : carre orange + label en petites capitales */
+.eyebrow{display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  font-size:13px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink-soft); margin-bottom:14px}
+.eyebrow .dot{width:15px; height:15px; border-radius:4px; background:var(--orange); flex:none}
+
+.headline{font-size:clamp(1.7rem,3.4vw,2.9rem); line-height:1.22; letter-spacing:-.034em;
+  font-weight:700}
+.headline .line{display:flex; flex-wrap:nowrap; align-items:center; justify-content:center;
+  gap:.1em .28em; white-space:nowrap}
+.pill{font-style:normal; display:inline-flex; align-items:center; padding:.14em .5em .2em;
+  border-radius:999px; font-size:.66em; font-weight:600; letter-spacing:-.012em; line-height:1.4}
+.pill-blue{background:var(--blue); box-shadow:0 0 0 4px rgba(169,201,255,.34)}
+
+/* DEMO — la visionneuse 3D vit dans son propre document, comme les apercus de
+   la home. Aucun cadre : ni fond, ni bordure, ni ombre, elle se pose sur le
+   creme de la page. Ratio 4/5 (celui des photos de temoignages) : la camera de
+   la visionneuse recule des que le cadre est etroit, un cadre trop vertical
+   rapetissait le livre. */
+.demo{padding:clamp(6px,1.4vh,14px) 20px clamp(26px,4vh,40px); background:var(--bg)}
+.demo-slot{position:relative; width:100%; max-width:420px; margin:0 auto; aspect-ratio:4/5;
+  background:transparent}
+.demo-slot iframe{position:absolute; inset:0; width:100%; height:100%;
+  border:0; background:transparent; display:block}
+
+/* TROIS LIGNES — puces a coche, meme motif que la liste de l'offre */
+.steps{padding:0 20px clamp(28px,4.4vh,44px); background:var(--bg)}
+.steps ul{list-style:none; max-width:420px; margin:0 auto;
+  display:flex; flex-direction:column; gap:11px}
+.steps li{position:relative; padding-left:28px; font-size:15.5px; line-height:1.45}
+.steps li::before{content:''; position:absolute; left:0; top:4px; width:17px; height:17px;
+  border-radius:50%; background:var(--orange);
+  -webkit-mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M20 6 9 17l-5-5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/13px no-repeat;
+          mask:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M20 6 9 17l-5-5' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/></svg>") center/13px no-repeat}
+
+/* FORMULAIRE — fond creme du site, transparentBackground=1 cote Tally.
+   Aucune hauteur fixe, aucun overflow dans la chaine de parents : c'est la
+   page qui scrolle, jamais l'iframe. */
+.form{padding:0 20px clamp(40px,6vh,68px); background:var(--bg)}
+.form-inner{max-width:560px; margin:0 auto}
+.form-inner iframe{display:block; width:100%; border:0; background:transparent}
+.form-fallback{font-size:14.5px; line-height:1.55; color:var(--ink-soft); text-align:center}
+.form-fallback a{color:var(--ink); font-weight:600}
+
+/* CTA discret vers la home */
+.back{padding:0 20px clamp(52px,8vh,90px); background:var(--bg);
+  display:flex; justify-content:center}
+
+/* FOOTER */
+.foot{border-top:1px solid var(--grid); background:var(--bg); padding:26px 20px}
+.foot-inner{max-width:1120px; margin:0 auto; display:grid;
+  grid-template-columns:1fr auto 1fr; align-items:center; gap:18px}
+.foot-brand{display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink);
+  justify-self:start}
+.foot-brand .brand-mark{width:26px; height:26px; color:var(--orange)}
+.foot-brand span{font-weight:700; font-size:17px; letter-spacing:.14em}
+.foot-social{justify-self:center; display:grid; place-items:center; width:40px; height:40px;
+  border-radius:50%; color:var(--ink); border:1px solid var(--grid);
+  transition:color .25s, border-color .25s, transform .25s}
+.foot-social:hover{color:var(--orange); border-color:var(--orange); transform:translateY(-1px)}
+.foot-social svg{width:20px; height:20px}
+.foot-credit{justify-self:end; font-size:13.5px; color:var(--ink-soft);
+  display:flex; flex-direction:column; align-items:flex-end; gap:3px; text-align:right}
+.foot-credit a{color:var(--ink); text-decoration:none; font-weight:500}
+.foot-credit a:hover{color:var(--orange)}
+@media(max-width:600px){
+  .foot-inner{grid-template-columns:1fr; justify-items:center; text-align:center; gap:14px}
+  .foot-brand,.foot-credit{justify-self:center}
+  .foot-credit{align-items:center; text-align:center}
+}
+
+@media(max-width:700px){
+  .headline .line{flex-wrap:wrap; white-space:normal; gap:.06em .24em}
+  .pill{font-size:.72em; padding:.1em .42em .16em}
+  .pill-blue{box-shadow:0 0 0 2px rgba(169,201,255,.34)}
+  .steps li{font-size:15px}
+}
+
+@media (prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} }
+:focus-visible{outline:2.5px solid var(--orange); outline-offset:3px; border-radius:4px}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a href="index.html" class="brand" aria-label="Kobver, home">
+    <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="6" width="7.5" height="20" rx="2" fill="currentColor"/><rect x="13.5" y="6" width="7.5" height="20" rx="2" fill="currentColor" opacity=".62"/><rect x="21.6" y="8.4" width="7.5" height="20" rx="2" fill="currentColor" opacity=".34" transform="rotate(9 25.35 18.4)"/></svg>
+    <span>KOBVER</span>
+  </a>
+</header>
+
+<section class="head">
+  <div class="grid-bg"></div>
+  <div class="head-inner">
+    <div class="eyebrow"><span class="dot"></span><span>Free offer</span></div>
+
+    <h1 class="headline">
+      <span class="line"><span>Get your</span></span>
+      <span class="line"><em class="pill pill-blue">3D book cover</em><span>for free</span></span>
+    </h1>
+  </div>
+</section>
+
+<!-- ======================= DEMO ======================= -->
+<section class="demo">
+  <div class="demo-slot">
+    <iframe data-src="fourth-wing-3d.html" title="3D render of the Fourth Wing cover"
+            loading="lazy" scrolling="no"></iframe>
+    <noscript><iframe src="fourth-wing-3d.html" title="3D render of the Fourth Wing cover"
+            loading="lazy" scrolling="no"></iframe></noscript>
+  </div>
+</section>
+
+<!-- ======================= EXPLICATION ======================= -->
+<section class="steps">
+  <ul>
+    <li>Send us the cover file of your book.</li>
+    <li>We turn it into a 3D render and a short animation.</li>
+    <li>You get it by email, free. Yours to post anywhere.</li>
+  </ul>
+</section>
+
+<!-- ======================= FORMULAIRE ======================= -->
+<section class="form">
+  <div class="form-inner">
+    <iframe data-tally-src="https://tally.so/embed/7RY9Va?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1"
+            loading="lazy" width="100%" height="500" frameborder="0" marginheight="0" marginwidth="0"
+            title="Get your 3D book cover for free"></iframe>
+    <noscript>
+      <p class="form-fallback">
+        <a href="https://tally.so/r/7RY9Va" target="_blank" rel="noopener">Open the form</a>
+        to get your free 3D book cover.
+      </p>
+    </noscript>
+  </div>
+</section>
+
+<!-- ======================= RETOUR HOME ======================= -->
+<div class="back">
+  <a href="index.html" class="btn btn-ghost">
+    Discover Kobver
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M5 15 15 5m0 0H8.33M15 5v6.67" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </a>
+</div>
+
+<!-- ======================= FOOTER ======================= -->
+<footer class="foot">
+  <div class="foot-inner">
+    <a href="index.html" class="foot-brand" aria-label="Kobver, home">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="4" y="6" width="7.5" height="20" rx="2" fill="currentColor"/><rect x="13.5" y="6" width="7.5" height="20" rx="2" fill="currentColor" opacity=".62"/><rect x="21.6" y="8.4" width="7.5" height="20" rx="2" fill="currentColor" opacity=".34" transform="rotate(9 25.35 18.4)"/></svg>
+      <span>KOBVER</span>
+    </a>
+
+    <a href="https://instagram.com/" target="_blank" rel="noopener"
+       class="foot-social" aria-label="Kobver on Instagram">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="2.75" y="2.75" width="18.5" height="18.5" rx="5.25" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="12" cy="12" r="4.25" stroke="currentColor" stroke-width="1.7"/>
+        <circle cx="17.4" cy="6.6" r="1.15" fill="currentColor"/>
+      </svg>
+    </a>
+
+    <div class="foot-credit">
+      <a href="mailto:contact@kobver.com">contact@kobver.com</a>
+      <span>Created by Mathis Dufour</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* La visionneuse est un document autonome qui tire three.js du CDN et porte ses
+   textures en base64 : plusieurs Mo. loading="lazy" sur une iframe n'est qu'une
+   indication, le navigateur la charge souvent tout de suite. On ne pose donc le
+   src qu'a l'approche du viewport — sur cette page, autant dire des l'arrivee,
+   mais le formulaire, lui, part en premier. Sans JS, le <noscript> prend le
+   relais. */
+(function(){
+  var frames = document.querySelectorAll('iframe[data-src]');
+  if(!frames.length) return;
+
+  function build(f){
+    if(f.hasAttribute('src')) return;
+    f.src = f.getAttribute('data-src');
+  }
+
+  if(!('IntersectionObserver' in window)){
+    Array.prototype.forEach.call(frames, build);
+    return;
+  }
+  var io = new IntersectionObserver(function(entries, obs){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ build(e.target); obs.unobserve(e.target); }
+    });
+  }, {rootMargin:'400px 0px'});
+  Array.prototype.forEach.call(frames, function(f){ io.observe(f); });
+})();
+</script>
+
+<script defer src="https://tally.so/widgets/embed.js"></script>
+<script>
+/* Sans ce script, la hauteur de l'iframe reste figee a 500px et le formulaire
+   est coupe : c'est lui qui installe le src et qui ecoute les messages de
+   redimensionnement (dynamicHeight=1). Si le fichier de Tally n'arrive pas
+   — reseau 4G capricieux, blocage —, on pose le src a la main : le formulaire
+   s'affiche quand meme, a hauteur fixe. */
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof Tally !== 'undefined'){ Tally.loadEmbeds(); return; }
+  var l = document.querySelectorAll('iframe[data-tally-src]:not([src])');
+  Array.prototype.forEach.call(l, function(f){
+    f.src = f.getAttribute('data-tally-src');
+  });
+});
+</script>
+
+</body>
+</html>
