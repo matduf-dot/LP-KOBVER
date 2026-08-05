@@ -394,6 +394,23 @@ html[lang="en"]      .lang-opt-en{display:none}
   .gal-viewport{overflow-x:auto}
 }
 
+/* ---- bandeau sur telephone ----
+   Rien d'anime ici, et surtout aucun will-change : le but est de ne forcer
+   aucun calque de rendu. Safari iOS jetait les deux calques de 3 000px sous
+   la pression memoire, les couvertures apparaissaient puis disparaissaient et
+   la bande semblait figee. Le defilement natif est peint par morceaux par le
+   navigateur, il ne retient que ce qui est a l'ecran. */
+@media(max-width:700px){
+  .gal-rows{-webkit-mask-image:none; mask-image:none}
+  .gal-viewport{overflow-x:auto; overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none; -ms-overflow-style:none}
+  .gal-viewport::-webkit-scrollbar{display:none}
+  .gal-row{animation:none; will-change:auto; padding:0 20px}
+  .gal-item{scroll-snap-align:center; height:200px}
+}
+
 /* ======================= OFFRE ======================= */
 .offer{position:relative; padding:clamp(66px,10vh,120px) 20px clamp(76px,11vh,132px); background:var(--bg)}
 .offer-head{text-align:center; margin-bottom:clamp(30px,4.4vh,50px)}
@@ -1038,13 +1055,28 @@ var GALLERY = [{"t":"Eclipse","w":306,"h":460,"f":"eclipse","c":"#080818"},{"t":
   var r2 = document.getElementById('galRow2');
   if(!r1 || !r2) return;
 
+  /* Sur telephone, deux bandes de 3 000px animees en transform forcent deux
+     calques de rendu permanents. A 3x, ca represente une trentaine de Mo de
+     surface, plus 48 images decodees : Safari iOS finit par liberer le tout.
+     Les couvertures apparaissaient puis disparaissaient, et l'animation
+     continuait de deplacer un calque vide, d'ou la bande figee.
+     On abandonne donc l'animation sous 700px au profit du defilement natif,
+     que le navigateur peint par morceaux, avec une seule bande et aucune
+     duplication : 12 vignettes au lieu de 48. */
+  function surTelephone(){ return window.innerWidth <= 700; }
+
   function fill(row, items){
-    /* on répète assez pour couvrir l'écran, puis on duplique :
-       l'animation jusqu'à -50% reboucle alors sans raccord visible */
-    var reps = Math.max(2, Math.ceil(window.innerWidth / (items.length * 190)) + 1);
-    var seq  = [];
-    for(var r=0; r<reps; r++) seq = seq.concat(items);
-    seq = seq.concat(seq);
+    var seq;
+    if(surTelephone()){
+      seq = items;             /* rien ne boucle, donc rien a dupliquer */
+    } else {
+      /* on répète assez pour couvrir l'écran, puis on duplique :
+         l'animation jusqu'à -50% reboucle alors sans raccord visible */
+      var reps = Math.max(2, Math.ceil(window.innerWidth / (items.length * 190)) + 1);
+      seq = [];
+      for(var r=0; r<reps; r++) seq = seq.concat(items);
+      seq = seq.concat(seq);
+    }
 
     var frag = document.createDocumentFragment();
     seq.forEach(function(c){
@@ -1080,8 +1112,13 @@ var GALLERY = [{"t":"Eclipse","w":306,"h":460,"f":"eclipse","c":"#080818"},{"t":
        sur celle des tuiles (112px), la bande faisait 2,4 fois la largeur de son
        contenu et l'animation traversait un long vide. La sequence etant
        exactement dupliquee, la boucle a -50% retombe pile sur la couture. */
-    var gap = parseFloat(getComputedStyle(row).gap) || 0;
-    var total = gap * (row.children.length - 1);
+    var cs = getComputedStyle(row);
+    var gap = parseFloat(cs.gap) || 0;
+    /* box-sizing:border-box : la largeur posee doit englober les marges
+       interieures, sinon les dernieres vignettes debordent du conteneur et le
+       defilement ne va pas jusqu'au bout */
+    var total = gap * (row.children.length - 1)
+              + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
     for(var k = 0; k < row.children.length; k++){
       total += row.children[k].getBoundingClientRect().width;
     }
@@ -1113,16 +1150,28 @@ var GALLERY = [{"t":"Eclipse","w":306,"h":460,"f":"eclipse","c":"#080818"},{"t":
      indices pairs en haut, impairs en bas */
   var a = GALLERY.filter(function(_,i){ return i % 2 === 0; });
   var b = GALLERY.filter(function(_,i){ return i % 2 === 1; });
-  fill(r1, a); fill(r2, b);
+
+  function construire(){
+    if(surTelephone()){
+      /* une seule bande, qui porte les 12 couvertures */
+      r2.parentElement.style.display = 'none';
+      r2.innerHTML = '';
+      fill(r1, GALLERY);
+    } else {
+      r2.parentElement.style.display = '';
+      fill(r1, a); fill(r2, b);
+    }
+  }
+  construire();
 
   /* On ne reconstruit que si la largeur a bouge. Sur telephone, scroller replie
      la barre d'URL : la hauteur change, resize part, et reconstruire remettait
-     les 48 vignettes a data-src (bande vide) en relancant l'animation a zero. */
+     les vignettes a data-src (bande vide) en relancant l'animation a zero. */
   var t, largeur = window.innerWidth;
   window.addEventListener('resize', function(){
     if(window.innerWidth === largeur) return;
     largeur = window.innerWidth;
-    clearTimeout(t); t = setTimeout(function(){ fill(r1, a); fill(r2, b); }, 250);
+    clearTimeout(t); t = setTimeout(construire, 250);
   });
 })();
 </script>
