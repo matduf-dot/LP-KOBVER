@@ -377,9 +377,15 @@ html[lang="en"]      .lang-opt-en{display:none}
 @keyframes gal-scroll     { from{transform:translateX(0)}    to{transform:translateX(-50%)} }
 @keyframes gal-scroll-rev { from{transform:translateX(-50%)} to{transform:translateX(0)} }
 
-.gal-item{flex:none; height:clamp(168px,20vw,248px); border-radius:5px; overflow:hidden;
+/* La largeur vient de aspect-ratio, pas de l'image. En laissant l'image la
+   dicter (height:100% + width:auto), WebKit ne sait pas dimensionner une tuile
+   dont le fichier n'est pas encore arrive : elle enflait, la bande passait de
+   3 000 a 17 600px et c'est du vide qui defilait devant l'ecran. Le ratio de
+   chaque couverture est pose par le JS dans --ratio. */
+.gal-item{flex:none; height:clamp(168px,20vw,248px); aspect-ratio:var(--ratio,306/460);
+  border-radius:5px; overflow:hidden;
   background:var(--grid-block); box-shadow:0 10px 24px rgba(22,20,21,.14)}
-.gal-item img{height:100%; width:auto; display:block}
+.gal-item img{width:100%; height:100%; object-fit:cover; display:block}
 
 .gal-cta{display:flex; justify-content:center; margin-top:clamp(34px,5vh,54px); padding:0 20px}
 
@@ -1044,6 +1050,8 @@ var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The 
     seq.forEach(function(c){
       var d = document.createElement('div');
       d.className = 'gal-item';
+      /* la tuile connait ses proportions avant meme que l'image arrive */
+      d.style.setProperty('--ratio', c.w + ' / ' + c.h);
       var i = document.createElement('img');
       /* loading et les dimensions AVANT src : une fois le src pose, la
          requete est deja partie et l'attribut lazy n'a plus aucun effet */
@@ -1061,6 +1069,19 @@ var GALLERY = [{"t": "Eclipse", "w": 306, "h": 460, "f": "eclipse"}, {"t": "The 
     });
     row.innerHTML = '';
     row.appendChild(frag);
+
+    /* Largeur posee sur la mesure reelle des tuiles. width:max-content ne suffit
+       pas : WebKit le calcule sur la largeur native des images (306px) et pas
+       sur celle des tuiles (112px), la bande faisait 2,4 fois la largeur de son
+       contenu et l'animation traversait un long vide. La sequence etant
+       exactement dupliquee, la boucle a -50% retombe pile sur la couture. */
+    var gap = parseFloat(getComputedStyle(row).gap) || 0;
+    var total = gap * (row.children.length - 1);
+    for(var k = 0; k < row.children.length; k++){
+      total += row.children[k].getBoundingClientRect().width;
+    }
+    row.style.width = total + 'px';
+
     if(revele) reveler();
   }
 
