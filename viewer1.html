@@ -9,7 +9,6 @@
     /* --- reglages exposes : c'est ici qu'on ajuste sans toucher au JS --- */
     --bg-core:   #46302a;   /* coeur du fond, brun chaud */
     --bg-edge:   #150e0c;   /* bord du fond */
-    --hint:      rgba(22,20,21,.42);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
@@ -21,14 +20,6 @@
   #stage{position:fixed;inset:0;display:block}
   #stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
   #stage canvas.dragging{cursor:grabbing}
-
-  #hint{
-    position:fixed;left:0;right:0;bottom:clamp(18px,4vh,44px);
-    text-align:center;color:var(--hint);
-    font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
-    pointer-events:none;transition:opacity .7s ease;
-  }
-  #hint.gone{opacity:0}
 
   #loader{
     position:fixed;inset:0;display:grid;place-items:center;
@@ -43,7 +34,7 @@
   #diag{position:fixed;left:0;right:0;bottom:14px;text-align:center;color:rgba(255,190,170,.75);font:500 11px/1.6 ui-monospace,monospace;letter-spacing:.06em;display:none;padding:0 16px}
   body.nowebgl #diag{display:block}
   body.nowebgl #fallback{display:grid}
-  body.nowebgl #stage,body.nowebgl #hint,body.nowebgl #loader{display:none}
+  body.nowebgl #stage,body.nowebgl #loader{display:none}
 
   #panel{
     position:fixed;top:14px;right:14px;width:212px;padding:13px 14px 11px;
@@ -69,13 +60,11 @@
     border-radius:5px;color:inherit;font:inherit;letter-spacing:.1em}
   #panel button:hover{background:rgba(240,225,200,.18)}
   #panel small{display:block;margin-top:7px;color:rgba(240,225,200,.32);font-size:9px;line-height:1.4}
-  @media (prefers-reduced-motion:reduce){#hint{transition:none}}
 </style>
 </head>
 <body>
 
 <div id="stage"></div>
-<p id="hint">Survolez, ou glissez pour tourner<br><span style="opacity:.55">Touche D : calibrage</span></p>
 <div id="panel">
   <h4>Calibrage &middot; v14</h4>
   <label><span class="row"><span>Exposition</span><b data-v="exposure">—</b></span>
@@ -576,16 +565,14 @@ shadow.position.y = -H/2 - 1.1;
 var rotY = LOOK.restY, rotX = LOOK.restX;   // rotation libre : drag + inertie
 var velY = 0, velX = 0;
 var hovY = 0, hovX = 0, hovTY = 0, hovTX = 0;  // parallaxe au survol, additive
-var dragging = false, lastX = 0, lastY = 0, idle = 0, touched = false;
+var dragging = false, lastX = 0, lastY = 0, idle = 0;
 var el = renderer.domElement;
-var hint = document.getElementById('hint');
 
 function down(e){
   dragging = true; idle = 0;
   el.classList.add('dragging');
   var p = e.touches ? e.touches[0] : e;
   lastX = p.clientX; lastY = p.clientY;
-  if(!touched){ touched = true; hint.classList.add('gone'); }
   if(e.cancelable) e.preventDefault();
 }
 function move(e){
@@ -621,8 +608,8 @@ window.addEventListener('touchend', up);
 el.tabIndex = 0;
 el.addEventListener('keydown', function(e){
   var s = 0.12;
-  if(e.key==='ArrowLeft'){ rotY -= s; touched=true; hint.classList.add('gone'); }
-  if(e.key==='ArrowRight'){ rotY += s; touched=true; hint.classList.add('gone'); }
+  if(e.key==='ArrowLeft'){ rotY -= s; }
+  if(e.key==='ArrowRight'){ rotY += s; }
   if(e.key==='ArrowUp'){ rotX = Math.max(-LOOK.tiltLimit, rotX - s); }
   if(e.key==='ArrowDown'){ rotX = Math.min(LOOK.tiltLimit, rotX + s); }
 });
