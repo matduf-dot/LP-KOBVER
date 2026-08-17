@@ -570,10 +570,8 @@ html[lang="en"]      .lang-opt-en{display:none}
     <div class="avatar-cluster">
       <span class="arc arc-1"></span><span class="arc arc-2"></span><span class="arc arc-3"></span>
       <div class="avatar">
-        <!-- Depose mathis.jpg a la racine et decommente : l'avatar est au premier
-             ecran, il se charge donc immediatement, sans differe.
-        <img src="mathis.jpg" alt="Mathis, fondateur de Kobver" width="76" height="76"> -->
-        <div class="ph" data-en="YOUR PHOTO">TA PHOTO</div>
+        <!-- l'avatar est au premier ecran : chargement immediat, pas de lazy -->
+        <img src="assets/img/mathis.jpg" alt="Mathis, fondateur de Kobver" data-en-alt="Mathis, founder of Kobver" width="76" height="76" fetchpriority="high" decoding="async">
       </div>
     </div>
 
