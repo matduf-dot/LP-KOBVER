@@ -4,3 +4,6 @@ node_modules/
 Thumbs.db
 .vscode/
 .idea/
+
+# fichiers sources (originaux haute def des visuels) : jamais servis en prod
+_sources/
